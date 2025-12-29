@@ -99,7 +99,7 @@ const OperationalView: React.FC<OperationalViewProps> = ({ collections }) => {
             <span className="text-[10px] font-black uppercase">Alertas Atendimento</span>
           </div>
           <p className="text-3xl font-black italic uppercase tracking-tighter text-red-600">{stats.criticalCount}</p>
-          <span className="text-[10px] text-slate-400 font-medium">Coletas pendentes > 2h</span>
+          <span className="text-[10px] text-slate-400 font-medium">Coletas pendentes &gt; 2h</span>
         </div>
         <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
           <div className="flex items-center gap-3 text-emerald-600 mb-2">
