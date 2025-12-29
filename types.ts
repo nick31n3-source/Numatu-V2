@@ -13,19 +13,25 @@ export interface User {
   isActive: boolean;
   foto_perfil_url?: string;
   
-  // Flags de Verificação (Persistentes no DB)
+  // Flags de Verificação
   email_verificado: boolean;
   telefone_verificado: boolean;
   cpf_verificado: boolean;
+  cnpj_verificado?: boolean;
   endereco_verificado: boolean;
   face_verified: boolean;
   
-  // Dados Sensíveis e Identidade
+  // Dados de Identidade
   telefone?: string;
   cpf?: string; 
+  cnpj?: string;
   password?: string;
+
+  // Atributos Específicos
+  tipo_empresa?: 'PEQUENA' | 'MEDIA' | 'GRANDE';
+  veiculo_tipo?: 'BICICLETA' | 'CARROCA' | 'CARRO' | 'CAMINHAO';
   
-  // Endereço Completo
+  // Endereço
   cep?: string;
   rua?: string;
   numero?: string;
@@ -33,7 +39,6 @@ export interface User {
   cidade?: string;
   estado?: string;
 
-  // Geolocalização de Último Login
   last_lat?: number;
   last_lng?: number;
   last_update?: string;

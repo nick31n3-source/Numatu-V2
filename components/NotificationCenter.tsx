@@ -23,10 +23,24 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ user }) => {
 
   const processChange = useCallback((data: CollectionData) => {
     let newNotif: Notification | null = null;
+    const transientData = data as any;
 
     // LÓGICA DE DESTINATÁRIO CRUZADO (CROSS-USER HANDSHAKE)
-    // 1. ANUNCIANTE PUBLICOU -> Coletor recebe (se não for ele o autor)
-    if (data.status === 'ANUNCIADA' && user.role === 'COLLECTOR') {
+    
+    // 1. COLETOR DESISTIU -> Anunciante recebe
+    if (data.status === 'ANUNCIADA' && transientData._abandoned && user.role === 'ADVERTISER' && data.id_anunciante === user.id) {
+      newNotif = {
+        id: `notif-${Date.now()}`,
+        title: 'Coleta Abandonada',
+        message: `O coletor desistiu da retirada de ${data.material}. Sua carga voltou ao marketplace.`,
+        type: 'WARNING',
+        ts: new Date(),
+        read: false
+      };
+    }
+    
+    // 2. ANUNCIANTE PUBLICOU -> Coletor recebe (se não for ele o autor)
+    else if (data.status === 'ANUNCIADA' && !transientData._abandoned && user.role === 'COLLECTOR') {
       newNotif = {
         id: `notif-${Date.now()}`,
         title: 'Nova Oportunidade',
@@ -37,7 +51,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ user }) => {
       };
     } 
     
-    // 2. COLETOR ACEITOU -> Anunciante recebe
+    // 3. COLETOR ACEITOU -> Anunciante recebe
     else if (data.status === 'ACEITA' && user.role === 'ADVERTISER' && data.id_anunciante === user.id) {
       newNotif = {
         id: `notif-${Date.now()}`,
@@ -49,7 +63,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ user }) => {
       };
     }
 
-    // 3. COLETOR CHEGOU -> Anunciante recebe
+    // 4. COLETOR CHEGOU -> Anunciante recebe
     else if (data.status === 'EM_COLETA' && user.role === 'ADVERTISER' && data.id_anunciante === user.id) {
       newNotif = {
         id: `notif-${Date.now()}`,
@@ -61,7 +75,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ user }) => {
       };
     }
 
-    // 4. CONCLUÍDA -> Coletor recebe
+    // 5. CONCLUÍDA -> Coletor recebe
     else if (data.status === 'CONCLUIDA' && user.role === 'COLLECTOR' && data.id_coletor === user.id) {
       newNotif = {
         id: `notif-${Date.now()}`,
@@ -91,7 +105,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ user }) => {
       if (e.key === 'numatu_collections_v5' && e.newValue) {
         try {
           const collections: CollectionData[] = JSON.parse(e.newValue);
-          // Pega a alteração mais recente (timestamp mais novo)
+          // Pega a alteração mais recente
           const latest = collections.sort((a, b) => 
             new Date(b.ts_solicitada).getTime() - new Date(a.ts_solicitada).getTime()
           )[0];

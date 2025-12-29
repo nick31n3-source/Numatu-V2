@@ -49,6 +49,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
     { id: 'guide', label: 'Manual do Gestor', icon: BookOpen, roles: ['ADMIN'] },
   ].filter(item => item.roles.includes(user.role));
 
+  const handleLogoutClick = () => {
+    // CORREÇÃO: Removido localStorage.clear() para não apagar os usuários cadastrados
+    onLogout();
+  };
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <button 
@@ -105,7 +110,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                 <p className="text-[9px] font-black text-brand-green uppercase tracking-widest">{user.role}</p>
                 <p className="text-xs font-bold truncate max-w-[120px]">{user.name}</p>
               </div>
-              <button onClick={onLogout} className="p-2 hover:bg-white/10 rounded-xl text-white/60 hover:text-white">
+              <button onClick={handleLogoutClick} title="Sair do Sistema" className="p-2 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-all active:scale-90">
                 <LogOut size={16} />
               </button>
             </div>
