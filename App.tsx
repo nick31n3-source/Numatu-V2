@@ -15,7 +15,7 @@ import ReportsView from './components/ReportsView';
 import FacialVerification from './components/FacialVerification';
 import { User, CollectionData } from './types';
 import { DatabaseService } from './database';
-import { ShieldAlert, RefreshCw, Trash2, HardDrive, Bell, CheckCircle2, Info } from 'lucide-react';
+import { ShieldAlert, RefreshCw, Trash2, HardDrive, Bell, CheckCircle2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -24,6 +24,15 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [dbStatus, setDbStatus] = useState<'CONNECTED' | 'SYNCING' | 'ERROR'>('CONNECTED');
   const [toast, setToast] = useState<{message: string, type: 'SUCCESS' | 'INFO'} | null>(null);
+
+  // Helper seguro para acessar a API Key
+  const getApiKey = () => {
+    try {
+      return process.env.API_KEY;
+    } catch (e) {
+      return undefined;
+    }
+  };
 
   const showToast = useCallback((message: string, type: 'SUCCESS' | 'INFO' = 'INFO') => {
     setToast({ message, type });
@@ -52,7 +61,6 @@ const App: React.FC = () => {
     const handleDataChange = (e: any) => {
       const { type, data } = e.detail;
       if (type === 'COLLECTION' && currentUser) {
-        // Exemplo de toast global
         if (data.status === 'ANUNCIADA' && currentUser.role === 'COLLECTOR') {
           showToast(`Nova oportunidade de coleta em ${data.neighborhood}`, 'INFO');
         } else if (data.status === 'ACEITA' && currentUser.role === 'ADVERTISER' && data.id_anunciante === currentUser.id) {
@@ -61,8 +69,10 @@ const App: React.FC = () => {
       }
     };
 
-    window.addEventListener('numatu_data_change', handleDataChange);
-    return () => window.removeEventListener('numatu_data_change', handleDataChange);
+    window.addEventListener('numatu_data_change', handleLocalChange);
+    function handleLocalChange(e: any) { handleDataChange(e); }
+
+    return () => window.removeEventListener('numatu_data_change', handleLocalChange);
   }, [currentUser?.id, currentUser?.role, showToast]);
 
   useEffect(() => {
@@ -128,8 +138,8 @@ const App: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-brand-tealDark flex flex-col items-center justify-center text-white p-10">
-        <div className="w-24 h-24 border-4 border-brand-green/20 border-t-brand-green rounded-full animate-spin"></div>
-        <h1 className="text-xl font-black italic uppercase tracking-widest mt-6 animate-pulse">Iniciando NUMATU...</h1>
+        <div className="w-16 h-16 border-4 border-brand-green/20 border-t-brand-green rounded-full animate-spin"></div>
+        <h1 className="text-sm font-black italic uppercase tracking-widest mt-6 animate-pulse">Iniciando NUMATU...</h1>
       </div>
     );
   }
@@ -154,6 +164,8 @@ const App: React.FC = () => {
       );
     }
 
+    const apiKey = getApiKey();
+
     switch (activeTab) {
       case 'overview': return <DashboardView collections={allCollections} />;
       case 'advertiser': return <AdvertiserView user={currentUser} collections={allCollections} onUpdate={updateCollection} onAdd={addCollection} onUpdateUser={updateCurrentUser} />;
@@ -177,8 +189,8 @@ const App: React.FC = () => {
                  <div className="p-6 bg-slate-800/50 rounded-2xl border border-slate-700">
                     <p className="text-[10px] font-black text-slate-500 uppercase mb-2">IA Engine Status</p>
                     <div className="flex items-center gap-2">
-                       <div className={`w-2 h-2 rounded-full ${process.env.API_KEY ? 'bg-emerald-500' : 'bg-red-500 animate-ping'}`}></div>
-                       <span className="text-xs font-bold text-slate-200">{process.env.API_KEY ? 'Conectado (Gemini)' : 'API Key Ausente'}</span>
+                       <div className={`w-2 h-2 rounded-full ${apiKey ? 'bg-emerald-500' : 'bg-red-500 animate-ping'}`}></div>
+                       <span className="text-xs font-bold text-slate-200">{apiKey ? 'Conectado (Gemini)' : 'API Key Ausente'}</span>
                     </div>
                  </div>
                  <div className="p-6 bg-slate-800/50 rounded-2xl border border-slate-700">
@@ -209,7 +221,6 @@ const App: React.FC = () => {
 
   return (
     <div className="relative min-h-screen">
-      {/* GLOBAL TOAST - MENSAGENS LÁ EM CIMA */}
       {toast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[300] w-full max-w-sm px-4 animate-in slide-in-from-top-full duration-500">
           <div className={`p-4 rounded-3xl shadow-2xl border flex items-center gap-4 ${

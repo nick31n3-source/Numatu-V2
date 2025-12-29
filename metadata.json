@@ -1,5 +1,5 @@
 {
-  "name": "Copy of NUMATU V2",
+  "name": "NUMATU V2",
   "description": "A comprehensive operational dashboard for reverse logistics and recycling management, including KPI tracking, route visualization, and environmental impact reporting.",
   "requestFramePermissions": [
     "geolocation",
