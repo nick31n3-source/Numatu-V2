@@ -2,7 +2,7 @@
 import React from 'react';
 import { 
   LayoutDashboard, Activity, Users, Leaf, Database, BookOpen, 
-  Scale, Menu, X, MapPin, Share2, Award, Megaphone, LogOut, Truck, Mail, Cloud, CloudOff, RefreshCw, ShieldCheck
+  Scale, Menu, X, MapPin, Share2, Award, Megaphone, LogOut, Truck, Mail, ShieldCheck, RefreshCw, CloudOff, Cloud
 } from 'lucide-react';
 import { User } from '../types';
 import NotificationCenter from './NotificationCenter';
@@ -14,6 +14,7 @@ interface LayoutProps {
   user: User;
   onLogout: () => void;
   dbStatus?: 'CONNECTED' | 'SYNCING' | 'ERROR';
+  onRetry?: () => void;
 }
 
 const BrandLogo = () => (
@@ -27,12 +28,12 @@ const BrandLogo = () => (
     </div>
     <div className="flex flex-col">
       <span className="font-black text-lg tracking-tighter text-brand-tealDark italic leading-none">NUMATU</span>
-      <span className="text-[7px] font-black uppercase tracking-[0.2em] text-brand-greenDark">Reciclagem e Transformação</span>
+      <span className="text-[7px] font-black uppercase tracking-[0.2em] text-brand-greenDark">Cloud Logistics V2</span>
     </div>
   </div>
 );
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onLogout, dbStatus = 'CONNECTED' }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onLogout, dbStatus = 'CONNECTED', onRetry }) => {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   const menuItems = [
@@ -42,23 +43,16 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
     { id: 'geo', label: user.role === 'COLLECTOR' ? 'Minhas Rotas' : 'Mapa de Atuação', icon: MapPin, roles: ['ADMIN', 'COLLECTOR'] },
     { id: 'reports', label: 'Relatórios Automáticos', icon: Mail, roles: ['ADMIN'] },
     { id: 'gamification', label: 'Reconhecimento', icon: Award, roles: ['ADMIN', 'ADVERTISER', 'COLLECTOR'] },
-    { id: 'partners', label: 'Rede de Parceiros', icon: Users, roles: ['ADMIN'] },
     { id: 'rules', label: 'Lógica e Métricas', icon: Scale, roles: ['ADMIN'] },
     { id: 'integration', label: 'Conexão de Dados', icon: Share2, roles: ['ADMIN'] },
     { id: 'datamodel', label: 'Estrutura Técnica', icon: Database, roles: ['ADMIN'] },
-    { id: 'guide', label: 'Manual do Gestor', icon: BookOpen, roles: ['ADMIN'] },
   ].filter(item => item.roles.includes(user.role));
-
-  const handleLogoutClick = () => {
-    // CORREÇÃO: Removido localStorage.clear() para não apagar os usuários cadastrados
-    onLogout();
-  };
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <button 
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="lg:hidden fixed bottom-6 right-6 z-50 p-4 bg-brand-teal text-white rounded-full shadow-2xl"
+        className="lg:hidden fixed bottom-6 right-6 z-50 p-4 bg-brand-teal text-white rounded-full shadow-2xl active:scale-95 transition-all"
       >
         {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
@@ -93,24 +87,27 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
           </nav>
           
           <div className="mt-auto pt-6 border-t border-slate-100 space-y-4">
-            <div className={`p-3 rounded-xl flex items-center gap-3 transition-colors ${
+            <button 
+              onClick={onRetry}
+              title="Clique para forçar sincronização"
+              className={`w-full p-3 rounded-xl flex items-center gap-3 transition-all active:scale-95 ${
               dbStatus === 'CONNECTED' ? 'bg-emerald-50 text-emerald-600' :
               dbStatus === 'SYNCING' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'
             }`}>
-              {dbStatus === 'CONNECTED' ? <ShieldCheck size={16} /> : 
+              {dbStatus === 'CONNECTED' ? <Cloud size={16} className="animate-pulse" /> : 
                dbStatus === 'SYNCING' ? <RefreshCw size={16} className="animate-spin" /> : <CloudOff size={16} />}
               <span className="text-[9px] font-black uppercase tracking-widest">
-                {dbStatus === 'CONNECTED' ? 'Integridade Local OK' : 
-                 dbStatus === 'SYNCING' ? 'Validando Escrita...' : 'Erro de Persistência'}
+                {dbStatus === 'CONNECTED' ? 'Supabase Ready' : 
+                 dbStatus === 'SYNCING' ? 'Sincronizando...' : 'Conexão Offline'}
               </span>
-            </div>
+            </button>
 
-            <div className="bg-brand-tealDark p-4 rounded-2xl text-white shadow-xl flex items-center justify-between">
-              <div>
-                <p className="text-[9px] font-black text-brand-green uppercase tracking-widest">{user.role}</p>
-                <p className="text-xs font-bold truncate max-w-[120px]">{user.name}</p>
+            <div className="bg-brand-tealDark p-4 rounded-2xl text-white shadow-xl flex items-center justify-between group">
+              <div className="min-w-0">
+                <p className="text-[9px] font-black text-brand-green uppercase tracking-widest leading-none mb-1">{user.role}</p>
+                <p className="text-xs font-bold truncate">{user.name}</p>
               </div>
-              <button onClick={handleLogoutClick} title="Sair do Sistema" className="p-2 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-all active:scale-90">
+              <button onClick={onLogout} title="Encerrar Sessão" className="p-2 hover:bg-red-500 rounded-xl text-white/60 hover:text-white transition-all active:scale-90 flex-shrink-0">
                 <LogOut size={16} />
               </button>
             </div>
@@ -118,7 +115,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto relative">
         <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-30">
           <div>
             <h1 className="text-xl font-black text-slate-800 italic uppercase tracking-tighter">
@@ -127,7 +124,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
           </div>
           <div className="flex items-center gap-4">
              <NotificationCenter user={user} />
-             <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-teal to-brand-tealDark text-white flex items-center justify-center font-black text-sm shadow-lg shadow-brand-teal/20">
+             <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-brand-teal to-brand-tealDark text-white flex items-center justify-center font-black text-sm shadow-lg shadow-brand-teal/20 border-2 border-white">
                 {user.name.charAt(0)}
              </div>
           </div>

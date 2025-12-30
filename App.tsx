@@ -15,100 +15,123 @@ import ReportsView from './components/ReportsView';
 import FacialVerification from './components/FacialVerification';
 import { User, CollectionData } from './types';
 import { DatabaseService } from './database';
-import { RefreshCw, Trash2, HardDrive } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<string>(() => localStorage.getItem('numatu_active_tab') || 'overview');
+  const [activeTab, setActiveTab] = useState<string>('');
   const [allCollections, setAllCollections] = useState<CollectionData[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [dbStatus, setDbStatus] = useState<'CONNECTED' | 'SYNCING' | 'ERROR'>(
+    DatabaseService.isCloud ? 'SYNCING' : 'CONNECTED'
+  );
+
+  const getDefaultTabForRole = (role: string) => {
+    switch (role) {
+      case 'ADMIN': return 'overview';
+      case 'ADVERTISER': return 'advertiser';
+      case 'COLLECTOR': return 'geo';
+      default: return 'auth';
+    }
+  };
+
+  // Centralized logout logic to be passed as onLogout prop
+  const handleLogout = useCallback(() => {
+    DatabaseService.setSession(null);
+    setCurrentUser(null);
+  }, []);
 
   const refreshCollections = useCallback(async () => {
-    const collections = await DatabaseService.getCollections();
-    setAllCollections(collections);
+    try {
+      const [collections, users] = await Promise.all([
+        DatabaseService.getCollections(),
+        DatabaseService.getUsers()
+      ]);
+      setAllCollections(collections);
+      setAllUsers(users);
+      setDbStatus('CONNECTED');
+    } catch (err) {
+      setDbStatus('ERROR');
+    }
   }, []);
 
   useEffect(() => {
     const initApp = async () => {
       setIsLoading(true);
-      const [session, collections] = await Promise.all([
-        DatabaseService.getSession(),
-        DatabaseService.getCollections()
-      ]);
-      setAllCollections(collections);
-      if (session) setCurrentUser(session);
-      setIsLoading(false);
+      try {
+        const [session, collections, users] = await Promise.all([
+          DatabaseService.getSession(),
+          DatabaseService.getCollections(),
+          DatabaseService.getUsers()
+        ]);
+        setAllCollections(collections);
+        setAllUsers(users);
+        setDbStatus('CONNECTED');
+        if (session) {
+          setCurrentUser(session);
+          setActiveTab(getDefaultTabForRole(session.role));
+        }
+      } catch (err) {
+        setDbStatus('ERROR');
+      } finally {
+        setIsLoading(false);
+      }
     };
     initApp();
-  }, []);
+    const unsubscribe = DatabaseService.subscribeToCollections(() => { refreshCollections(); });
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, [refreshCollections]);
 
-  const handleLogin = async (user: User) => {
-    await DatabaseService.setSession(user);
-    setCurrentUser(user);
-    const defaultTab = user.role === 'ADMIN' ? 'overview' : (user.role === 'ADVERTISER' ? 'advertiser' : 'geo');
-    setActiveTab(defaultTab);
-  };
-
-  const handleLogout = async () => {
-    await DatabaseService.setSession(null);
-    setCurrentUser(null);
-    setActiveTab('overview');
-  };
-
-  const updateCollection = async (updated: CollectionData) => {
-    await DatabaseService.saveCollection(updated);
-    await refreshCollections();
-  };
-
-  const addCollection = async (newCol: CollectionData) => {
-    await DatabaseService.saveCollection(newCol);
-    await refreshCollections();
-  };
-
-  const updateCurrentUser = async (updatedUser: User) => {
-    await DatabaseService.saveUser(updatedUser);
-    setCurrentUser(updatedUser);
-  };
-
-  if (isLoading) return (
-    <div className="min-h-screen bg-brand-tealDark flex flex-col items-center justify-center text-white p-6">
-      <RefreshCw className="animate-spin text-brand-green mb-4" size={48} />
-      <p className="text-xs font-black uppercase tracking-[0.3em]">Carregando...</p>
-    </div>
-  );
-
-  if (!currentUser) return <AuthView onLogin={handleLogin} />;
-
-  if (!currentUser.face_verified && currentUser.role !== 'ADMIN') {
-    return <FacialVerification userName={currentUser.name} onVerified={(img) => updateCurrentUser({...currentUser, face_verified: true, foto_perfil_url: img})} />;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <div className="w-16 h-16 border-4 border-brand-teal border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-brand-teal font-black uppercase text-[10px] tracking-widest">Sincronizando NUMATU...</p>
+      </div>
+    );
   }
 
+  if (!currentUser) {
+    return <AuthView onLogin={(user) => {
+      setCurrentUser(user);
+      DatabaseService.setSession(user);
+      setActiveTab(getDefaultTabForRole(user.role));
+    }} />;
+  }
+
+  if (currentUser.role !== 'ADMIN' && !currentUser.face_verified) {
+    return <FacialVerification userName={currentUser.name} onVerified={(photo, gender) => {
+      const updatedUser = { ...currentUser, face_verified: true, foto_perfil_url: photo, gender };
+      setCurrentUser(updatedUser);
+      DatabaseService.saveUser(updatedUser);
+    }} />;
+  }
+
+  const renderContent = () => {
+    const isAdmin = currentUser.role === 'ADMIN';
+    switch (activeTab) {
+      case 'overview': return isAdmin ? <DashboardView collections={allCollections} /> : renderContentForRole();
+      case 'operational': return isAdmin ? <OperationalView collections={allCollections} /> : renderContentForRole();
+      case 'advertiser': return <AdvertiserView user={currentUser} collections={allCollections} onUpdate={DatabaseService.saveCollection} onAdd={DatabaseService.saveCollection} onUpdateUser={(u) => { setCurrentUser(u); DatabaseService.saveUser(u); }} onLogout={handleLogout} />;
+      case 'geo': return currentUser.role === 'COLLECTOR' ? <CollectorDashboard user={currentUser} collections={allCollections} onUpdate={DatabaseService.saveCollection} /> : <GeoAnalysisView collections={allCollections} users={allUsers} />;
+      case 'reports': return isAdmin ? <ReportsView collections={allCollections} /> : renderContentForRole();
+      case 'rules': return isAdmin ? <BusinessRulesView /> : renderContentForRole();
+      case 'integration': return isAdmin ? <IntegrationView collections={allCollections} /> : renderContentForRole();
+      case 'datamodel': return isAdmin ? <AdvicePanel /> : renderContentForRole();
+      case 'gamification': return <GamificationView />;
+      default: return renderContentForRole();
+    }
+  };
+
+  const renderContentForRole = () => {
+    if (currentUser.role === 'ADVERTISER') return <AdvertiserView user={currentUser} collections={allCollections} onUpdate={DatabaseService.saveCollection} onAdd={DatabaseService.saveCollection} onUpdateUser={(u) => { setCurrentUser(u); DatabaseService.saveUser(u); }} onLogout={handleLogout} />;
+    if (currentUser.role === 'COLLECTOR') return <CollectorDashboard user={currentUser} collections={allCollections} onUpdate={DatabaseService.saveCollection} />;
+    return <DashboardView collections={allCollections} />;
+  };
+
   return (
-    <Layout activeTab={activeTab} setActiveTab={setActiveTab} user={currentUser} onLogout={handleLogout}>
-      {(() => {
-        switch (activeTab) {
-          case 'overview': return <DashboardView collections={allCollections} />;
-          case 'advertiser': return <AdvertiserView user={currentUser} collections={allCollections} onUpdate={updateCollection} onAdd={addCollection} onUpdateUser={updateCurrentUser} />;
-          case 'geo': return currentUser.role === 'COLLECTOR' ? <CollectorDashboard user={currentUser} collections={allCollections} onUpdate={updateCollection} /> : <GeoAnalysisView collections={allCollections} />;
-          case 'reports': return <ReportsView collections={allCollections} />;
-          case 'operational': return <OperationalView collections={allCollections} />;
-          case 'gamification': return <GamificationView />;
-          case 'rules': return <BusinessRulesView />;
-          case 'integration': return <IntegrationView />;
-          case 'datamodel': return (
-            <div className="max-w-4xl mx-auto space-y-8 pb-20">
-              <div className="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 text-white">
-                <h3 className="text-xl font-black italic uppercase mb-4 flex items-center gap-3"><HardDrive /> Console</h3>
-                <button onClick={() => DatabaseService.clearDatabase()} className="bg-red-600 text-white px-8 py-4 rounded-xl font-black uppercase text-[10px] flex items-center gap-2">
-                  <Trash2 size={16} /> Resetar App
-                </button>
-              </div>
-            </div>
-          );
-          case 'guide': return <AdvicePanel />;
-          default: return <DashboardView collections={allCollections} />;
-        }
-      })()}
+    <Layout activeTab={activeTab} setActiveTab={setActiveTab} user={currentUser} onLogout={handleLogout} dbStatus={dbStatus} onRetry={() => refreshCollections()}>
+      {renderContent()}
     </Layout>
   );
 };

@@ -9,6 +9,7 @@ export interface User {
   nome_publico?: string;
   bio?: string;
   role: UserRole;
+  gender?: 'M' | 'F' | 'O'; // Adicionado para verificação facial
   isProfileComplete: boolean;
   isActive: boolean;
   foto_perfil_url?: string;

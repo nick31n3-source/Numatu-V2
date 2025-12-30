@@ -1,89 +1,89 @@
 
 import React from 'react';
-import { Lightbulb, Layout, MapPin, Database, Target, Star, GitMerge, Layers } from 'lucide-react';
+import { Lightbulb, Layout, MapPin, Database, Target, Star, GitMerge, Layers, BarChart3, LineChart, ShieldCheck } from 'lucide-react';
 
 const AdvicePanel: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-12 pb-20">
-      <div className="bg-gradient-to-br from-emerald-700 to-emerald-900 text-white p-10 rounded-[2rem] shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-br from-brand-tealDark to-slate-900 text-white p-10 rounded-[3rem] shadow-xl relative overflow-hidden">
         <div className="relative z-10">
-          <span className="bg-emerald-500/30 text-emerald-100 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4 inline-block">Arquiteto de Dados</span>
-          <h2 className="text-4xl font-extrabold mb-4">Modelagem NUMATU</h2>
-          <p className="text-emerald-50 text-xl opacity-90 leading-relaxed max-w-2xl">
-            Como organizar suas tabelas para que o Looker Studio gere insights automáticos e rápidos.
+          <span className="bg-brand-green/30 text-brand-green px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider mb-4 inline-block border border-brand-green/20">Guia de BI Profissional</span>
+          <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4">Dashboard Design Pro</h2>
+          <p className="text-slate-300 text-lg opacity-90 leading-relaxed max-w-2xl font-medium italic">
+            Como transformar as tabelas do Supabase em visualizações de impacto no Google Looker Studio.
           </p>
         </div>
-        <div className="absolute -bottom-12 -right-12 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-12 -right-12 w-80 h-80 bg-brand-teal/10 rounded-full blur-3xl"></div>
       </div>
 
-      {/* Relacionamentos */}
+      {/* Looker Studio Cheat Sheet */}
       <section className="space-y-6">
-        <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-          <GitMerge className="text-emerald-600" />
-          Dicionário de Relacionamentos
+        <h3 className="text-xl font-black italic uppercase tracking-tighter text-slate-800 flex items-center gap-3">
+          <BarChart3 className="text-brand-teal" />
+          Looker Studio Cheat Sheet
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <p className="text-sm font-semibold text-emerald-700 mb-1">Empresa → Coletas (1:N)</p>
-            <p className="text-xs text-slate-500 italic">"Cada ponto de geração pode solicitar infinitas coletas ao longo do tempo."</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-8 bg-white border border-slate-200 rounded-[2.5rem] shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><LineChart size={20} /></div>
+                <h4 className="font-black uppercase italic text-sm text-slate-800">Cálculo de Eficiência</h4>
+            </div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Fórmula Campo Calculado:</p>
+            <div className="bg-slate-900 text-emerald-400 p-4 rounded-2xl font-mono text-[11px] mb-4">
+              COUNT(CASE WHEN status = 'CONCLUIDA' THEN id END) / COUNT(id)
+            </div>
+            <p className="text-xs text-slate-500 font-medium">Use este campo em um gráfico de "Visão Geral" para medir a saúde da sua operação.</p>
           </div>
-          <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <p className="text-sm font-semibold text-emerald-700 mb-1">Coletor → Coletas (1:N)</p>
-            <p className="text-xs text-slate-500 italic">"O coletor é o executor da transação vinculada pelo ID."</p>
-          </div>
-          <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <p className="text-sm font-semibold text-emerald-700 mb-1">Coleta → Materiais (1:N)</p>
-            <p className="text-xs text-slate-500 italic">"Importante separar itens para não duplicar o peso total da coleta principal."</p>
-          </div>
-          <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <p className="text-sm font-semibold text-emerald-700 mb-1">Usuário → Perfil (1:1)</p>
-            <p className="text-xs text-slate-500 italic">"A conta de acesso define se o usuário vê a visão de Empresa ou Coletor."</p>
+
+          <div className="p-8 bg-white border border-slate-200 rounded-[2.5rem] shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl"><MapPin size={20} /></div>
+                <h4 className="font-black uppercase italic text-sm text-slate-800">Mapas de Calor</h4>
+            </div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Dica de Dimensão:</p>
+            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+              No Looker Studio, altere o tipo de campo de <strong>lat</strong> e <strong>lng</strong> para "Geográfico". Isso permite criar mapas de bolhas onde o tamanho da bolha é a métrica <strong>weight</strong>.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* MVP Strategy */}
+      {/* Relacionamentos */}
       <section className="space-y-6">
-        <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-          <Layers className="text-blue-600" />
-          Estratégia de MVP (Simplificação)
+        <h3 className="text-xl font-black italic uppercase tracking-tighter text-slate-800 flex items-center gap-3">
+          <GitMerge className="text-brand-green" />
+          Relacionamentos PostgreSQL
         </h3>
-        <div className="bg-blue-50 border border-blue-100 p-8 rounded-3xl">
-          <h4 className="font-bold text-blue-900 mb-4">Versão de Planilha Única (Flat Table)</h4>
-          <p className="text-blue-800 text-sm mb-6 leading-relaxed">
-            Se você estiver começando apenas com Google Sheets e quiser rapidez, pode fundir tudo em uma única <strong>"Grande Tabela de Coletas"</strong>. Cada linha representa um material coletado.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white p-4 rounded-xl shadow-sm">
-              <span className="text-xs font-bold text-blue-600 uppercase">Essencial</span>
-              <ul className="mt-2 space-y-1 text-xs text-slate-600">
-                <li>• Data da Coleta</li>
-                <li>• Bairro/Cidade</li>
-                <li>• Nome da Empresa</li>
-                <li>• Peso (kg)</li>
-                <li>• Tipo de Material</li>
-              </ul>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Empresa → Coletas', rel: '1:N', desc: 'Um gerador, múltiplos pedidos.' },
+            { label: 'Coletor → Coletas', rel: '1:N', desc: 'Um agente, várias missões.' },
+            { label: 'Status → Time', rel: 'Funil', desc: 'O tempo entre cada mudança de status.' },
+            { label: 'Usuário → Roles', rel: 'Permissão', desc: 'Define o que cada perfil acessa.' },
+          ].map((item, idx) => (
+            <div key={idx} className="p-5 bg-slate-50 border border-slate-100 rounded-2xl">
+              <p className="text-[10px] font-black text-brand-teal uppercase tracking-widest mb-1">{item.label}</p>
+              <p className="text-lg font-black italic text-slate-800 leading-none">{item.rel}</p>
+              <p className="text-[9px] text-slate-400 font-bold uppercase mt-2">{item.desc}</p>
             </div>
-            <div className="bg-white p-4 rounded-xl shadow-sm">
-              <span className="text-xs font-bold text-slate-400 uppercase">Segunda Fase</span>
-              <ul className="mt-2 space-y-1 text-xs text-slate-400">
-                <li>• Nome do Coletor</li>
-                <li>• Tempo de Atendimento</li>
-                <li>• Avaliação (Estrelas)</li>
-                <li>• Distância Percorrida</li>
-              </ul>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
       {/* Dica Final */}
-      <div className="bg-amber-50 border border-amber-200 p-6 rounded-2xl flex items-start gap-4">
-        <Star className="text-amber-500 w-8 h-8 flex-shrink-0 fill-current" />
-        <div>
-          <h4 className="font-bold text-amber-900 mb-1">Métricas vs Dimensões</h4>
-          <p className="text-amber-800 text-sm leading-relaxed">
-            No Looker Studio, campos como <strong>Peso</strong> e <strong>Tempo</strong> devem ser configurados como "Métricas" (Agregação: Soma ou Média). Campos como <strong>Status</strong> e <strong>Bairro</strong> são "Dimensões". Nunca misture as categorias na fonte de dados!
+      <div className="bg-brand-tealDark p-10 rounded-[3rem] text-white flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent"></div>
+        <div className="p-5 bg-white/10 backdrop-blur-md rounded-[2rem] border border-white/10 shrink-0">
+            <Star className="text-brand-yellow w-12 h-12 fill-brand-yellow" />
+        </div>
+        <div className="relative z-10 text-center md:text-left">
+          <h4 className="text-xl font-black italic uppercase tracking-tighter mb-2">Padrão de Cores NUMATU</h4>
+          <p className="text-sm text-slate-300 font-medium leading-relaxed italic">
+            Para um dashboard profissional, use a paleta: <br/>
+            <span className="text-brand-teal">#2A8EAB (Primária)</span> • 
+            <span className="text-brand-green"> #8DC63F (Sustentabilidade)</span> • 
+            <span className="text-brand-yellow"> #FFD100 (Alertas)</span>. <br/>
+            Isso cria uma conexão visual imediata entre este app e os seus relatórios.
           </p>
         </div>
       </div>
