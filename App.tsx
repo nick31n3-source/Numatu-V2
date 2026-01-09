@@ -35,12 +35,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Centralized logout logic to be passed as onLogout prop
-  const handleLogout = useCallback(() => {
-    DatabaseService.setSession(null);
-    setCurrentUser(null);
-  }, []);
-
   const refreshCollections = useCallback(async () => {
     try {
       const [collections, users] = await Promise.all([
@@ -54,6 +48,21 @@ const App: React.FC = () => {
       setDbStatus('ERROR');
     }
   }, []);
+
+  const handleLogout = useCallback(() => {
+    DatabaseService.setSession(null);
+    setCurrentUser(null);
+  }, []);
+
+  const handleSaveCollection = async (col: CollectionData) => {
+    await DatabaseService.saveCollection(col);
+    await refreshCollections(); // Garantia de UI atualizada
+  };
+
+  const handleSaveUser = async (u: User) => {
+    await DatabaseService.saveUser(u);
+    await refreshCollections();
+  };
 
   useEffect(() => {
     const initApp = async () => {
@@ -84,9 +93,9 @@ const App: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center space-y-4">
-        <div className="w-16 h-16 border-4 border-brand-teal border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-brand-teal font-black uppercase text-[10px] tracking-widest">Sincronizando NUMATU...</p>
+      <div className="min-h-screen mesh-bg flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <div className="w-16 h-16 border-4 border-white/20 border-t-brand-green rounded-full animate-spin"></div>
+        <p className="text-white font-black uppercase text-[10px] tracking-widest">Sincronizando Ecossistema...</p>
       </div>
     );
   }
@@ -103,7 +112,7 @@ const App: React.FC = () => {
     return <FacialVerification userName={currentUser.name} onVerified={(photo, gender) => {
       const updatedUser = { ...currentUser, face_verified: true, foto_perfil_url: photo, gender };
       setCurrentUser(updatedUser);
-      DatabaseService.saveUser(updatedUser);
+      handleSaveUser(updatedUser);
     }} />;
   }
 
@@ -112,8 +121,8 @@ const App: React.FC = () => {
     switch (activeTab) {
       case 'overview': return isAdmin ? <DashboardView collections={allCollections} /> : renderContentForRole();
       case 'operational': return isAdmin ? <OperationalView collections={allCollections} /> : renderContentForRole();
-      case 'advertiser': return <AdvertiserView user={currentUser} collections={allCollections} onUpdate={DatabaseService.saveCollection} onAdd={DatabaseService.saveCollection} onUpdateUser={(u) => { setCurrentUser(u); DatabaseService.saveUser(u); }} onLogout={handleLogout} />;
-      case 'geo': return currentUser.role === 'COLLECTOR' ? <CollectorDashboard user={currentUser} collections={allCollections} onUpdate={DatabaseService.saveCollection} /> : <GeoAnalysisView collections={allCollections} users={allUsers} />;
+      case 'advertiser': return <AdvertiserView user={currentUser} collections={allCollections} onUpdate={handleSaveCollection} onAdd={handleSaveCollection} onUpdateUser={handleSaveUser} onLogout={handleLogout} />;
+      case 'geo': return currentUser.role === 'COLLECTOR' ? <CollectorDashboard user={currentUser} collections={allCollections} onUpdate={handleSaveCollection} onUpdateUser={handleSaveUser} onLogout={handleLogout} /> : <GeoAnalysisView collections={allCollections} users={allUsers} />;
       case 'reports': return isAdmin ? <ReportsView collections={allCollections} /> : renderContentForRole();
       case 'rules': return isAdmin ? <BusinessRulesView /> : renderContentForRole();
       case 'integration': return isAdmin ? <IntegrationView collections={allCollections} /> : renderContentForRole();
@@ -124,8 +133,8 @@ const App: React.FC = () => {
   };
 
   const renderContentForRole = () => {
-    if (currentUser.role === 'ADVERTISER') return <AdvertiserView user={currentUser} collections={allCollections} onUpdate={DatabaseService.saveCollection} onAdd={DatabaseService.saveCollection} onUpdateUser={(u) => { setCurrentUser(u); DatabaseService.saveUser(u); }} onLogout={handleLogout} />;
-    if (currentUser.role === 'COLLECTOR') return <CollectorDashboard user={currentUser} collections={allCollections} onUpdate={DatabaseService.saveCollection} />;
+    if (currentUser.role === 'ADVERTISER') return <AdvertiserView user={currentUser} collections={allCollections} onUpdate={handleSaveCollection} onAdd={handleSaveCollection} onUpdateUser={handleSaveUser} onLogout={handleLogout} />;
+    if (currentUser.role === 'COLLECTOR') return <CollectorDashboard user={currentUser} collections={allCollections} onUpdate={handleSaveCollection} onUpdateUser={handleSaveUser} onLogout={handleLogout} />;
     return <DashboardView collections={allCollections} />;
   };
 

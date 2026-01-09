@@ -44,6 +44,7 @@ const FacialVerification: React.FC<FacialVerificationProps> = ({ onVerified, use
     }
   };
 
+  // Fix: use the recommended content structure (Content[]) for generateContent
   const captureAndVerify = async () => {
     if (!videoRef.current || !canvasRef.current || isScanning) return;
     setIsScanning(true);
@@ -66,12 +67,12 @@ const FacialVerification: React.FC<FacialVerificationProps> = ({ onVerified, use
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: {
+        contents: [{
           parts: [
             { text: "Analise esta selfie. Primeiro: Existe um rosto visível? Segundo: Qual o gênero provável da pessoa (M ou F)? Responda no formato estrito: RESULT:[VERIFIED/FAIL]|GENDER:[M/F/O]. Se não houver rosto, responda RESULT:FAIL." },
             { inlineData: { mimeType: 'image/jpeg', data: base64Data } }
           ]
-        },
+        }],
         config: { temperature: 0.1 }
       });
 

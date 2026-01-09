@@ -12,6 +12,20 @@ const COLLECTIONS_KEY = 'numatu_collections_v5';
 const USERS_KEY = 'numatu_users_v5';
 const SESSION_KEY = 'numatu_active_session_v5';
 
+const mapUserFromDb = (dbUser: any): User => ({
+  ...dbUser,
+  isActive: dbUser.is_active,
+  isProfileComplete: dbUser.is_profile_complete
+});
+
+const mapCollectionFromDb = (dbCol: any): CollectionData => ({
+  ...dbCol,
+  companyName: dbCol.company_name || 'Empresa Local',
+  companyAvatar: dbCol.company_avatar || '',
+  collectorName: dbCol.collector_name,
+  isArchived: dbCol.is_archived
+});
+
 export const DatabaseService = {
   isCloud: isCloudEnabled,
 
@@ -32,70 +46,124 @@ export const DatabaseService = {
 
   async getUsers(): Promise<User[]> {
     if (supabase) {
-      const { data } = await supabase.from('users').select('*');
-      if (data) return data as User[];
+      const { data, error } = await supabase.from('users').select('*');
+      if (!error && data) return data.map(mapUserFromDb);
+      if (error) console.error("DEBUG [DB]: Erro GetUsers:", error.message);
     }
     const saved = localStorage.getItem(USERS_KEY);
     return saved ? JSON.parse(saved) : [];
   },
 
   async saveUser(user: User): Promise<void> {
-    // 1. Salva no Supabase
+    console.log("DEBUG [DB]: Salvando usuário:", user.id);
     if (supabase) {
-      const { error } = await supabase.from('users').upsert({
+      const payload = {
         id: user.id,
+        username: user.username,
         email: user.email,
+        password: user.password,
         name: user.name,
         role: user.role,
+        is_active: user.isActive,
+        is_profile_complete: user.isProfileComplete,
         face_verified: user.face_verified,
+        email_verificado: user.email_verificado,
+        telefone_verificado: user.telefone_verificado,
+        cpf_verificado: user.cpf_verificado,
         cnpj_verificado: user.cnpj_verificado,
-        isActive: user.isActive,
-        foto_perfil_url: user.foto_perfil_url
-      });
-      if (error) console.error("Erro Supabase User:", error);
+        endereco_verificado: user.endereco_verificado,
+        foto_perfil_url: user.foto_perfil_url,
+        tipo_empresa: user.tipo_empresa,
+        bio: user.bio,
+        cnpj: user.cnpj,
+        cpf: user.cpf,
+        telefone: user.telefone,
+        cep: user.cep,
+        rua: user.rua,
+        numero: user.numero,
+        bairro: user.bairro,
+        cidade: user.cidade
+      };
+
+      const { error } = await supabase.from('users').upsert(payload);
+      if (error) console.error("DEBUG [DB]: Erro SaveUser:", error.message);
     }
 
-    // 2. Backup Local
     const users = await DatabaseService.getUsers();
     const index = users.findIndex(u => u.id === user.id);
     let updated = index > -1 ? users.map(u => u.id === user.id ? user : u) : [...users, user];
     localStorage.setItem(USERS_KEY, JSON.stringify(updated));
     
-    const session = await DatabaseService.getSession();
-    if (session && session.id === user.id) localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    const savedSession = localStorage.getItem(SESSION_KEY);
+    if (savedSession) {
+        const session = JSON.parse(savedSession);
+        if (session.id === user.id) localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    }
   },
 
   async getCollections(): Promise<CollectionData[]> {
     let rawData: CollectionData[] = [];
     if (supabase) {
-      const { data } = await supabase.from('collections').select('*').order('ts_solicitada', { ascending: false });
-      rawData = (data || []) as CollectionData[];
-    } else {
-      const saved = localStorage.getItem(COLLECTIONS_KEY);
-      rawData = saved ? JSON.parse(saved) : [];
+      const { data, error } = await supabase.from('collections').select('*').order('ts_solicitada', { ascending: false });
+      if (error) console.error("DEBUG [DB]: Erro GetCollections:", error.message);
+      if (data) rawData = data.map(mapCollectionFromDb);
     }
+    
+    const saved = localStorage.getItem(COLLECTIONS_KEY);
+    const localData: CollectionData[] = saved ? JSON.parse(saved) : [];
+    
+    const combined = [...rawData];
+    const remoteIds = new Set(rawData.map(r => r.id));
+    localData.forEach(l => {
+        if (!remoteIds.has(l.id)) combined.push(l);
+    });
 
-    const validUsers = await DatabaseService.getUsers();
-    const validUserIds = new Set(validUsers.filter(u => u.isActive && (u.face_verified || u.cnpj_verificado || u.role === 'ADMIN')).map(u => u.id));
-
-    // FILTRO RIGOROSO: Apenas anúncios de usuários ativos e verificados na tabela 'users'
-    return rawData.filter(c => 
-      validUserIds.has(c.id_anunciante) && 
+    console.log("DEBUG [DB]: Listando coletas (total):", combined.length);
+    
+    return combined.filter(c => 
       !c.id.includes('TEST') && 
       c.status !== 'CANCELADA'
-    );
+    ).sort((a, b) => new Date(b.ts_solicitada).getTime() - new Date(a.ts_solicitada).getTime());
   },
 
   async saveCollection(collection: CollectionData): Promise<void> {
+    console.log("DEBUG [DB]: Iniciando salvamento de coleta:", collection.id);
     const { _abandoned, ...cleanData } = collection as any;
-    if (supabase) try { await supabase.from('collections').upsert(cleanData); } catch {}
+    
+    if (supabase) {
+      const payload = {
+        ...cleanData,
+        // CRITICAL FIX: Strings vazias em chaves estrangeiras devem ser NULL
+        id_coletor: cleanData.id_coletor || null,
+        id_anunciante: cleanData.id_anunciante || null,
+        company_name: cleanData.companyName || 'Empresa',
+        company_avatar: cleanData.companyAvatar || '',
+        collector_name: cleanData.collectorName || null,
+        is_archived: cleanData.isArchived || false
+      };
+      
+      delete (payload as any).companyName;
+      delete (payload as any).companyAvatar;
+      delete (payload as any).collectorName;
+      delete (payload as any).isArchived;
+
+      const { error } = await supabase.from('collections').upsert(payload);
+      if (error) console.error("DEBUG [DB]: Erro SaveCollection (Supabase):", error.message);
+      else console.log("DEBUG [DB]: Coleta salva com sucesso no Supabase.");
+    }
     
     const collections = await DatabaseService.getCollections();
     const index = collections.findIndex(c => c.id === collection.id);
     let updated = index > -1 ? collections.map(c => c.id === collection.id ? cleanData : c) : [cleanData, ...collections];
     localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(updated));
+    console.log("DEBUG [DB]: Coleta salva no LocalStorage.");
     
     window.dispatchEvent(new CustomEvent('numatu_data_change', { detail: { data: cleanData } }));
+  },
+
+  async clearAllData(): Promise<void> {
+    localStorage.clear();
+    window.location.reload();
   },
 
   subscribeToCollections(callback: () => void) {

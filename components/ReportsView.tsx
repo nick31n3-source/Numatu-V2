@@ -14,12 +14,8 @@ const ReportsView: React.FC<ReportsViewProps> = ({ collections }) => {
   const [sentSuccess, setSentSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Fix: use recommended structure (Content[]) for generateContent and handle response safely
   const generateReport = async () => {
-    if (!process.env.API_KEY) {
-      setError("Sistema em modo offline: API Key não configurada.");
-      return;
-    }
-
     setIsSending(true);
     setSentSuccess(false);
     setError(null);
@@ -36,10 +32,14 @@ const ReportsView: React.FC<ReportsViewProps> = ({ collections }) => {
 
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Gere um relatório executivo operacional para o sistema NUMATU. 
-        Dados: ${JSON.stringify(summaryData)}. 
-        Relate métricas totais, performance por bairro e uma mensagem motivacional sobre preservação ambiental. 
-        Responda em Português do Brasil de forma estruturada.`,
+        contents: [{ 
+          parts: [{ 
+            text: `Gere um relatório executivo operacional para o sistema NUMATU. 
+            Dados: ${JSON.stringify(summaryData)}. 
+            Relate métricas totais, performance por bairro e uma mensagem motivacional sobre preservação ambiental. 
+            Responda em Português do Brasil de forma estruturada.` 
+          }] 
+        }],
       });
 
       const reportText = response.text || "Conteúdo não gerado.";
@@ -95,7 +95,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({ collections }) => {
 
             <div className="space-y-4">
                <button 
-                 onClick={generateReport}
+                 onClick={generateReport} 
                  disabled={isSending}
                  className="w-full bg-slate-900 text-white py-5 rounded-3xl font-black flex items-center justify-center gap-3 hover:bg-brand-teal transition-all shadow-xl active:scale-95 disabled:opacity-50"
                >

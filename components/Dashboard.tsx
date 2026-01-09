@@ -45,6 +45,7 @@ const DashboardView: React.FC<DashboardProps> = ({ collections }) => {
     return { totalKg, completedCount, activePartners, activeCollectors };
   }, [filteredCollections]);
 
+  // Fix: use the recommended content structure (Content[]) and safer response handling
   const generateAIInsight = async () => {
     if (filteredCollections.length === 0) {
       setAiInsight("Ainda não há dados suficientes no período selecionado para gerar insights.");
@@ -58,7 +59,7 @@ const DashboardView: React.FC<DashboardProps> = ({ collections }) => {
       
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: prompt
+        contents: [{ parts: [{ text: prompt }] }]
       });
       setAiInsight(response.text || "Insight gerado com sucesso, mas retornou vazio.");
     } catch (err) {

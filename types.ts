@@ -9,12 +9,11 @@ export interface User {
   nome_publico?: string;
   bio?: string;
   role: UserRole;
-  gender?: 'M' | 'F' | 'O'; // Adicionado para verificação facial
+  gender?: 'M' | 'F' | 'O';
   isProfileComplete: boolean;
   isActive: boolean;
   foto_perfil_url?: string;
   
-  // Flags de Verificação
   email_verificado: boolean;
   telefone_verificado: boolean;
   cpf_verificado: boolean;
@@ -22,17 +21,14 @@ export interface User {
   endereco_verificado: boolean;
   face_verified: boolean;
   
-  // Dados de Identidade
   telefone?: string;
   cpf?: string; 
   cnpj?: string;
   password?: string;
 
-  // Atributos Específicos
   tipo_empresa?: 'PEQUENA' | 'MEDIA' | 'GRANDE';
   veiculo_tipo?: 'BICICLETA' | 'CARROCA' | 'CARRO' | 'CAMINHAO';
   
-  // Endereço
   cep?: string;
   rua?: string;
   numero?: string;
@@ -46,7 +42,9 @@ export interface User {
 }
 
 export type CollectionStatus = 
+  | 'RASCUNHO'
   | 'ANUNCIADA' 
+  | 'AGENDADA'
   | 'ACEITA' 
   | 'EM_ROTA' 
   | 'EM_COLETA' 
@@ -61,9 +59,12 @@ export interface CollectionData {
   id_coletor?: string;
   status: CollectionStatus;
   material: MaterialType;
+  title?: string;
   description?: string;
   weight: number;
   weight_final?: number;
+  price_suggested?: number;
+  price_final?: number;
   neighborhood: string;
   city: string;
   address: string;
@@ -71,15 +72,14 @@ export interface CollectionData {
   lng: number;
   companyName: string;
   companyAvatar: string;
-  foto_item_url?: string;
+  foto_item_url?: string; // Capa principal
+  foto_item_urls?: string[]; // Galeria
   codigo_confirmacao?: string;
   collectorName?: string;
   ts_solicitada: string;
+  ts_agendada?: string;
   ts_aceita?: string;
-  ts_em_rota?: string;
   ts_concluida?: string;
-  ts_cancelada?: string;
-  ts_expiracao?: string;
   prioridade: 'Baixa' | 'Média' | 'Alta';
   notes?: string;
   isArchived?: boolean;
